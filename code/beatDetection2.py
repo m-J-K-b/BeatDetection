@@ -1,6 +1,8 @@
+### Here i tried to implement the algorithm described here:
+# https://www.clear.rice.edu/elec301/Projects01/beat_sync/beatalgo.html
+
 import wave
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pyaudio
 

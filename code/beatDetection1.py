@@ -1,3 +1,7 @@
+### Here i tried to implement the algorithm described here:
+# https://archive.gamedev.net/archive/reference/programming/features/beatdetection/index.html
+
+
 import pathlib
 import time
 import wave
@@ -67,21 +71,28 @@ def get_beat(
     local_normalization_factor = instant_window_size / local_window_size
 
     W = local_window_size // instant_window_size
-
+    W_half = W // 2
+    instant_energy_data_ext = np.concatenate(
+        (
+            np.zeros(shape=(instant_energy_data.shape[0], W_half)),
+            instant_energy_data,
+            np.zeros(shape=(instant_energy_data.shape[0], W_half)),
+        ),
+        axis=1,
+    )
     instant_energy_data_strided = stride_tricks.as_strided(
-        instant_energy_data,
+        instant_energy_data_ext,
         shape=(instant_energy_data.shape[-1], instant_energy_data.shape[0], W),
         strides=(
-            instant_energy_data.itemsize,
-            instant_energy_data.shape[0] * instant_energy_data.itemsize,
-            instant_energy_data.itemsize,
+            instant_energy_data_ext.itemsize,
+            instant_energy_data_ext.itemsize * (instant_energy_data_ext.shape[-1]),
+            instant_energy_data_ext.itemsize,
         ),
     )
-
     beat = np.zeros_like(instant_energy_data)
 
     for i, local_data in enumerate(instant_energy_data_strided):
-        for j in range(freq_splits):
+        for j in range(instant_energy_data.shape[0]):
             if (
                 instant_energy_data[j, i]
                 > np.sum(local_data[j, :])
@@ -96,10 +107,11 @@ def get_beat(
     return resampled_beat.copy()
 
 
-def get_time_stamps_from_beat(beat, fs, freq_splits, normalized=False):
-    beat_indicies = np.argwhere(beat > 0)
-    print(beat_indicies)
-    return beat_time_stamps
+def get_time_stamps_from_beat(beat, fs, normalized=False):
+    print(beat.shape)
+    beat_indicies = np.logical_xor(beat[:, 1:], beat[:, :-1])
+    beat_indicies = np.argwhere(beat_indicies > 0) / fs
+    return beat_indicies
 
 
 def _play_audio(wf, stream, chunk):
@@ -168,16 +180,14 @@ def main():
         min_power_factor=1.3,
         freq_ranges=freq_ranges,
     )
-    print(beat)
     contact_time_stamps = [
         time_stamps
-        for time_stamps in get_time_stamps_from_beat(
-            beat, fs, freq_splits, normalized=False
-        )
+        for time_stamps in get_time_stamps_from_beat(beat, fs, normalized=False)
     ]
     normalized_contact_time_stamps = [
         time_stamps / duration_s for time_stamps in contact_time_stamps
     ]
+    print(len(contact_time_stamps), contact_time_stamps[0].shape)
 
     ### initialize pygame
     pg.init()
