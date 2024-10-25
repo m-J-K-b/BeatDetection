@@ -6,5 +6,3 @@ In order to get the code to run you have to clone the repository, make a python 
 
 https://www.clear.rice.edu/elec301/Projects01/beat_sync/beatalgo.html
 https://archive.gamedev.net/archive/reference/programming/features/beatdetection/index.html
-
-This message is secret
